@@ -8,6 +8,10 @@ namespace tracert_utility
 {
     class Tracert
     {
+        const int TIMEOUT = 3000;
+        const int MAX_HOPS = 30;
+        const int PACKAGE_NUMBER = 3;
+
         public string GetDNS(EndPoint endPoint)
         {
             return Dns.GetHostEntry(IPAddress.Parse(endPoint.ToString().Split(':')[0])).HostName;
@@ -19,7 +23,7 @@ namespace tracert_utility
 
             try
             {
-                ipHost = Dns.GetHostEntry(host_name);
+                ipHost = Dns.GetHostByName(host_name);
             }
             catch (SocketException)
             {
@@ -31,22 +35,23 @@ namespace tracert_utility
 
             ICMP icmp_package = new ICMP();
             icmp_package.data_size = icmp_package.data.Length;
+            icmp_package.GetCheckSum();
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Raw, ProtocolType.Icmp);
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, 3000);
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReceiveTimeout, TIMEOUT);
             byte[] buffer;
             int ttl = 1;
             bool finish = false;
 
             Console.WriteLine("Трассировка маршрута к " + host_name + " с максимальным числом прыжков 30:");
 
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < MAX_HOPS; i++)
             {
                 int error_count = 0;
                 Console.Write("{0, 2}", i + 1);
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.IpTimeToLive, ttl++);
 
-                for (int j = 0; j < 3; j++)
+                for (int j = 0; j < PACKAGE_NUMBER; j++)
                 {
                     buffer = new byte[2048];
                     DateTime time_start = DateTime.Now;
